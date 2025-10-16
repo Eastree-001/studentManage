@@ -59,6 +59,20 @@ const manageStudents = (groupId: number) => {
   router.push(`/group/${groupId}`)
 }
 
+const showAddGroupModal = ref(false)
+const showEditGroupModal = ref(false)
+const editingGroup = ref<Group | null>(null)
+
+const handleEditGroup = (group: Group) => {
+  editingGroup.value = group
+  showEditGroupModal.value = true
+}
+
+const closeEditModal = () => {
+  showEditGroupModal.value = false
+  editingGroup.value = null
+}
+
 const handleDeleteGroup = (group: Group) => {
   ElMessageBox.confirm(`确定要删除小组 "${group.name}" 吗?`, '确认删除', {
     confirmButtonText: '确定',
@@ -73,8 +87,6 @@ const handleDeleteGroup = (group: Group) => {
     }
   })
 }
-
-const showAddGroupModal = ref(false)
 
 </script>
 
@@ -110,9 +122,10 @@ const showAddGroupModal = ref(false)
         <span>{{ getStudentNames(row.id) }}</span>
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="220">
+    <el-table-column label="操作" width="300">
         <template #default="{ row }">
             <el-button size="small" @click="manageStudents(row.id)">管理学生</el-button>
+            <el-button size="small" type="primary" @click="handleEditGroup(row)">编辑</el-button>
             <el-button size="small" type="danger" @click="handleDeleteGroup(row)">删除</el-button>
         </template>
     </el-table-column>
@@ -120,6 +133,10 @@ const showAddGroupModal = ref(false)
 
   <Modal :show="showAddGroupModal" @close="showAddGroupModal = false">
     <GroupForm @close="showAddGroupModal = false" />
+  </Modal>
+
+  <Modal :show="showEditGroupModal" @close="closeEditModal">
+    <GroupForm :group="editingGroup" @close="closeEditModal" />
   </Modal>
 </template>
 
