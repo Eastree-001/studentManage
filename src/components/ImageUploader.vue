@@ -9,11 +9,12 @@ const fileInput = ref<HTMLInputElement | null>(null)
 
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (!target.files || target.files.length === 0) {
+  const file = target.files?.[0]
+
+  if (!file) {
     return
   }
 
-  const file = target.files[0]
   const fileExt = file.name.split('.').pop()
   const filePath = `${Date.now()}.${fileExt}`
 
