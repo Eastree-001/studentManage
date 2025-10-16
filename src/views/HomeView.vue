@@ -15,42 +15,17 @@ const router = useRouter()
 
 const editableGroups = ref<Group[]>([])
 const originalGroups = ref<Group[]>([]) // To track changes
-const duplicateScores = ref(new Set<number>())
 
 // --- Change Tracking ---
 const isChanged = computed(() => {
   return JSON.stringify(originalGroups.value) !== JSON.stringify(editableGroups.value)
 })
 
-// --- Validation Logic ---
-const validateScores = () => {
-  duplicateScores.value.clear()
-  const seenScores = new Map<number, number>()
-  editableGroups.value.forEach(group => {
-    const score = group.score
-    seenScores.set(score, (seenScores.get(score) || 0) + 1)
-  })
-
-  seenScores.forEach((count, score) => {
-    if (count > 1) {
-      duplicateScores.value.add(score)
-    }
-  })
-}
-
-const tableRowClassName = ({ row }: { row: Group }) => {
-  if (row.score && duplicateScores.value.has(row.score)) {
-    return 'duplicate-score-row'
-  }
-  return ''
-}
-
 // --- Data Fetching and Watching ---
 watch(() => groupStore.groups, (newGroups) => {
   const clonedData = cloneDeep(newGroups)
   editableGroups.value = clonedData
   originalGroups.value = cloneDeep(newGroups) // Store pristine copy for change detection
-  validateScores() // Validate after data is loaded
   if (newGroups && newGroups.length) {
     newGroups.forEach(group => {
       studentStore.fetchStudentsForGroup(group.id)
@@ -69,12 +44,6 @@ const getStudentNames = (groupId: number) => {
 }
 
 const saveScores = async () => {
-  validateScores() // Final check before saving
-  if (duplicateScores.value.size > 0) {
-    ElMessage.error('分数必须是唯一的，请解决冲突后再保存')
-    return
-  }
-
   try {
     await groupStore.updateGroupScores(editableGroups.value)
     ElMessage.success('分数更新成功')
@@ -116,7 +85,7 @@ const showAddGroupModal = ref(false)
       <el-button 
         type="primary" 
         @click="saveScores" 
-        :disabled="duplicateScores.size > 0 || !isChanged"
+        :disabled="!isChanged"
       >
         保存分数
       </el-button>
@@ -124,7 +93,7 @@ const showAddGroupModal = ref(false)
     </div>
   </div>
 
-  <el-table :data="editableGroups" style="width: 100%" border :row-class-name="tableRowClassName">
+  <el-table :data="editableGroups" style="width: 100%" border>
     <el-table-column prop="name" label="小组名称" width="180" />
     <el-table-column prop="avatar" label="小组头像" width="120">
       <template #default="{ row }">
@@ -133,7 +102,7 @@ const showAddGroupModal = ref(false)
     </el-table-column>
     <el-table-column prop="score" label="分数" width="150">
       <template #default="{ row }">
-        <el-input-number v-model="row.score" :min="1" size="small" @change="validateScores" />
+        <el-input-number v-model="row.score" :min="0" size="small" />
       </template>
     </el-table-column>
     <el-table-column label="组员信息" width="250">
@@ -160,9 +129,5 @@ const showAddGroupModal = ref(false)
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
-}
-
-:deep(.duplicate-score-row) {
-  background-color: #fef0f0 !important;
 }
 </style>
